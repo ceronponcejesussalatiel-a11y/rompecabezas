@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rompecabezas Interactivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Selector de imágenes */
+        .image-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .image-button {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .image-button:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .image-button img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .image-button .label {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        /* Configuración del juego */
+        .game-config {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .config-title {
+            color: #667eea;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .difficulty-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .difficulty-btn {
+            padding: 15px 20px;
+            border: 3px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .difficulty-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .difficulty-btn.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .custom-input {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .custom-input input {
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            width: 150px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .button-group {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Área del juego */
+        .game-area {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .game-info {
+            font-size: 1.1rem;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .puzzle-container {
+            display: grid;
+            gap: 2px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ddd;
+            padding: 2px;
+            border-radius: 10px;
+            touch-action: none;
+        }
+
+        .puzzle-piece {
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            aspect-ratio: 1;
+        }
+
+        .puzzle-piece:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .puzzle-piece.selected {
+            border-color: #ff6b6b;
+            transform: scale(1.1);
+            z-index: 20;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            text-align: center;
+            z-index: 1000;
+            transition: transform 0.5s ease;
+        }
+
+        .success-message.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .success-message h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .success-message .time {
+            font-size: 1.5rem;
+            color: #764ba2;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .puzzle-container {
+                max-width: 100%;
+            }
+
+            .game-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .image-selector {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 Rompecabezas Interactivo</h1>
+
+        <!-- Pantalla de selección de imagen -->
+        <div id="imageScreen" class="screen active">
+            <div class="image-selector">
+                <div class="image-button" onclick="selectImage(1)">
+                    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400" alt="Montaña">
+                    <div class="label">Imagen 1: Montaña</div>
+                </div>
+                <div class="image-button" onclick="selectImage(2)">
+                    <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400" alt="Bosque">
+                    <div class="label">Imagen 2: Bosque</div>
+                </div>
+                <div class="image-button" onclick="selectImage(3)">
+                    <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400" alt="Playa">
+                    <div class="label">Imagen 3: Playa</div>
+                </div>
+                <div class="image-button" onclick="selectImage(4)">
+                    <img src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=400" alt="Ciudad">
+                    <div class="label">Imagen 4: Ciudad</div>
+                </div>
+                <div class="image-button" onclick="selectImage(5)">
+                    <img src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400" alt="Animal">
+                    <div class="label">Imagen 5: Animal</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de configuración -->
+        <div id="configScreen" class="screen">
+            <div class="game-config">
+                <h2 class="config-title">Configurar Rompecabezas</h2>
+                <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                    Selecciona la dificultad:
+                </p>
+                <div class="difficulty-buttons">
+                    <button class="difficulty-btn" onclick="setDifficulty(3)">Fácil<br>(3x3)</button>
+                    <button class="difficulty-btn" onclick="setDifficulty(4)">Normal<br>(4x4)</button>
+                    <button class="difficulty-btn" onclick="setDifficulty(5)">Difícil<br>(5x5)</button>
+                    <button class="difficulty-btn" onclick="setDifficulty(6)">Experto<br>(6x6)</button>
+                </div>
+                <div class="custom-input">
+                    <p style="color: #666; margin-bottom: 10px;">O ingresa un número personalizado (2-10):</p>
+                    <input type="number" id="customPieces" min="2" max="10" placeholder="Ej: 7">
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startGame()">Comenzar Juego</button>
+                    <button class="btn btn-secondary" onclick="backToImages()">Volver</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla del juego -->
+        <div id="gameScreen" class="screen">
+            <div class="game-area">
+                <div class="game-header">
+                    <div class="game-info">
+                        <span id="movesCount">Movimientos: 0</span>
+                    </div>
+                    <div class="game-info">
+                        <span id="timerDisplay">Tiempo: 00:00</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="resetGame()">Reiniciar</button>
+                        <button class="btn btn-secondary" onclick="backToConfig()">Volver</button>
+                    </div>
+                </div>
+                <div id="puzzleContainer" class="puzzle-container"></div>
+            </div>
+        </div>
+
+        <!-- Mensaje de éxito -->
+        <div id="successMessage" class="success-message">
+            <h2>¡Felicitaciones! 🎉</h2>
+            <p class="time" id="finalTime"></p>
+            <p style="color: #666; margin-bottom: 20px;">¡Has completado el rompecabezas!</p>
+            <button class="btn btn-primary" onclick="playAgain()">Jugar de Nuevo</button>
+        </div>
+    </div>
+
+    <script>
+        const images = {
+            1: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+            2: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800',
+            3: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800',
+            4: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800',
+            5: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800'
+        };
+
+        let currentImage = null;
+        let gridSize = 3;
+        let pieces = [];
+        let selectedPiece = null;
+        let moves = 0;
+        let timer = null;
+        let seconds = 0;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function selectImage(imageId) {
+            currentImage = images[imageId];
+            showScreen('configScreen');
+        }
+
+        function setDifficulty(size) {
+            gridSize = size;
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            document.getElementById('customPieces').value = '';
+        }
+
+        function backToImages() {
+            showScreen('imageScreen');
+        }
+
+        function backToConfig() {
+            stopTimer();
+            showScreen('configScreen');
+        }
+
+        function startGame() {
+            const customValue = document.getElementById('customPieces').value;
+            if (customValue) {
+                gridSize = Math.max(2, Math.min(10, parseInt(customValue)));
+            }
+            
+            if (!gridSize || gridSize < 2) {
+                alert('Por favor selecciona una dificultad o ingresa un número válido');
+                return;
+            }
+
+            moves = 0;
+            seconds = 0;
+            updateMoves();
+            showScreen('gameScreen');
+            initPuzzle();
+            startTimer();
+        }
+
+        function initPuzzle() {
+            const container = document.getElementById('puzzleContainer');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            
+            pieces = [];
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                pieces.push(i);
+            }
+            
+            shuffleArray(pieces);
+            
+            pieces.forEach((pieceIndex, position) => {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.dataset.originalIndex = pieceIndex;
+                piece.dataset.currentIndex = position;
+                
+                const row = Math.floor(pieceIndex / gridSize);
+                const col = pieceIndex % gridSize;
+                const bgPosX = (col * 100) / (gridSize - 1);
+                const bgPosY = (row * 100) / (gridSize - 1);
+                
+                piece.style.backgroundImage = `url(${currentImage})`;
+                piece.style.backgroundPosition = `${bgPosX}% ${bgPosY}%`;
+                piece.style.backgroundSize = `${gridSize * 100}%`;
+                
+                piece.addEventListener('click', () => selectPuzzlePiece(position));
+                container.appendChild(piece);
+            });
+        }
+
+        function selectPuzzlePiece(position) {
+            const allPieces = document.querySelectorAll('.puzzle-piece');
+            
+            if (selectedPiece === null) {
+                selectedPiece = position;
+                allPieces[position].classList.add('selected');
+            } else {
+                if (selectedPiece === position) {
+                    allPieces[position].classList.remove('selected');
+                    selectedPiece = null;
+                } else {
+                    swapPieces(selectedPiece, position);
+                    allPieces[selectedPiece].classList.remove('selected');
+                    selectedPiece = null;
+                    moves++;
+                    updateMoves();
+                    checkWin();
+                }
+            }
+        }
+
+        function swapPieces(pos1, pos2) {
+            const temp = pieces[pos1];
+            pieces[pos1] = pieces[pos2];
+            pieces[pos2] = temp;
+            
+            const allPieces = document.querySelectorAll('.puzzle-piece');
+            const piece1 = allPieces[pos1];
+            const piece2 = allPieces[pos2];
+            
+            const tempBg = piece1.style.backgroundPosition;
+            const tempOriginal = piece1.dataset.originalIndex;
+            
+            piece1.style.backgroundPosition = piece2.style.backgroundPosition;
+            piece1.dataset.originalIndex = piece2.dataset.originalIndex;
+            
+            piece2.style.backgroundPosition = tempBg;
+            piece2.dataset.originalIndex = tempOriginal;
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function checkWin() {
+            const won = pieces.every((piece, index) => piece === index);
+            if (won) {
+                stopTimer();
+                document.getElementById('finalTime').textContent = `Tiempo: ${formatTime(seconds)} - Movimientos: ${moves}`;
+                document.getElementById('successMessage').classList.add('show');
+            }
+        }
+
+        function updateMoves() {
+            document.getElementById('movesCount').textContent = `Movimientos: ${moves}`;
+        }
+
+        function startTimer() {
+            stopTimer();
+            timer = setInterval(() => {
+                seconds++;
+                document.getElementById('timerDisplay').textContent = `Tiempo: ${formatTime(seconds)}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        function formatTime(secs) {
+            const mins = Math.floor(secs / 60);
+            const remainingSecs = secs % 60;
+            return `${String(mins).padStart(2, '0')}:${String(remainingSecs).padStart(2, '0')}`;
+        }
+
+        function resetGame() {
+            stopTimer();
+            startGame();
+        }
+
+        function playAgain() {
+            document.getElementById('successMessage').classList.remove('show');
+            showScreen('imageScreen');
+        }
+    </script>
+</body>
+</html>
